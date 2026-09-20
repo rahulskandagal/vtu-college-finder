@@ -1,0 +1,653 @@
+// VTU College Finder — Prisma schema
+// PostgreSQL relational model for colleges, branches, historical KCET cutoffs,
+// fees, placements, faculty, campus data, student accounts and admin records.
+//
+// Every "important" data model carries an optional `sourceId` (→ Source) and an
+// `isDemo` flag so that seeded sample data can never be mistaken for official
+// information in the UI.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum CollegeType {
+  GOVERNMENT
+  AIDED
+  PRIVATE
+  UNIVERSITY
+  DEEMED
+}
+
+enum Quota {
+  KCET
+  COMEDK
+  MANAGEMENT
+  NRI
+  OTHER
+}
+
+enum SeatType {
+  GENERAL
+  HYDERABAD_KARNATAKA
+  RURAL
+  KANNADA_MEDIUM
+  SNQ
+  OTHER
+}
+
+enum FacilityCategory {
+  ACADEMIC
+  LIBRARY
+  SPORTS
+  MEDICAL
+  TRANSPORT
+  DINING
+  TECHNOLOGY
+  SECURITY
+  RESIDENTIAL
+  RECREATION
+  OTHER
+}
+
+enum HostelType {
+  BOYS
+  GIRLS
+  COED
+}
+
+enum RecruiterSector {
+  IT
+  CORE
+  ELECTRONICS
+  CONSULTING
+  FINANCE
+  AUTOMOTIVE
+  MANUFACTURING
+  STARTUP
+  OTHER
+}
+
+enum EventType {
+  TECHNICAL_FEST
+  CULTURAL_FEST
+  SPORTS
+  WORKSHOP
+  SEMINAR
+  CONFERENCE
+  HACKATHON
+  CODING_COMPETITION
+  STUDENT_ACTIVITY
+  OTHER
+}
+
+enum ClubCategory {
+  TECHNICAL
+  CULTURAL
+  SPORTS
+  SOCIAL
+  ENTREPRENEURSHIP
+  PROFESSIONAL
+  OTHER
+}
+
+enum BranchCategory {
+  COMPUTING
+  ELECTRONICS
+  ELECTRICAL
+  MECHANICAL
+  CIVIL
+  CHEMICAL
+  AEROSPACE
+  BIOTECH
+  OTHER
+}
+
+enum ImportStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+// ───────────────────────────── Users ─────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(STUDENT)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile     StudentProfile?
+  shortlists  Shortlist[]
+  comparisons Comparison[]
+  reviews     CollegeReview[]
+  importLogs  ImportLog[]
+}
+
+model StudentProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kcetRank            Int?
+  category            String?
+  gender              String?
+  preferredBranches   String[] @default([])
+  preferredDistricts  String[] @default([])
+  collegeTypePref     String?
+  budgetMax           Int? // annual fee budget in INR
+  hostelRequired      Boolean  @default(false)
+  placementImportance Int      @default(3) // 1-5
+  campusPreference    String?
+  updatedAt           DateTime @updatedAt
+}
+
+// ───────────────────────────── Sources ─────────────────────────────
+
+model Source {
+  id              String    @id @default(cuid())
+  name            String
+  url             String?
+  publisher       String? // KEA, College, VTU, NBA, NAAC, Government, Demo
+  publicationYear Int?
+  lastVerifiedAt  DateTime?
+  notes           String?
+  isDemo          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  colleges     College[]
+  cutoffs      Cutoff[]
+  fees         Fee[]
+  faculty      Faculty[]
+  facilities   Facility[]
+  laboratories Laboratory[]
+  hostels      Hostel[]
+  placements   Placement[]
+  events       Event[]
+  hackathons   Hackathon[]
+  clubs        Club[]
+  achievements Achievement[]
+  milestones   Milestone[]
+  departments  Department[]
+}
+
+// ───────────────────────────── Colleges ─────────────────────────────
+
+model College {
+  id              String      @id @default(cuid())
+  slug            String      @unique
+  code            String      @unique // KEA college code, e.g. E005
+  name            String
+  shortName       String?
+  establishedYear Int?
+  type            CollegeType @default(PRIVATE)
+  district        String
+  city            String
+  address         String?
+  pincode         String?
+  affiliation     String      @default("Visvesvaraya Technological University (VTU)")
+  university      String?
+  accreditation   String[]    @default([]) // e.g. NAAC A+, NBA (CSE, ECE)
+  autonomous      Boolean     @default(false)
+  website         String?
+  email           String?
+  phone           String?
+  description     String?
+  history         String?
+  vision          String?
+  mission         String?
+  principal       String?
+  campusAcres     Float?
+  imageUrl        String?
+  hostelAvailable Boolean     @default(false)
+  isDemo          Boolean     @default(false)
+  lastVerifiedAt  DateTime?
+  sourceId        String?
+  source          Source?     @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  departments  Department[]
+  branches     CollegeBranch[]
+  cutoffs      Cutoff[]
+  fees         Fee[]
+  faculty      Faculty[]
+  facilities   Facility[]
+  laboratories Laboratory[]
+  hostels      Hostel[]
+  placements   Placement[]
+  recruiters   CollegeRecruiter[]
+  events       Event[]
+  hackathons   Hackathon[]
+  clubs        Club[]
+  achievements Achievement[]
+  milestones   Milestone[]
+  images       CollegeImage[]
+  shortlists   Shortlist[]
+  reviews      CollegeReview[]
+
+  @@index([district])
+  @@index([type])
+  @@index([name])
+}
+
+model Department {
+  id                String   @id @default(cuid())
+  collegeId         String
+  college           College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  name              String
+  slug              String
+  about             String?
+  hod               String?
+  researchAreas     String[] @default([])
+  studentActivities String?
+  isDemo            Boolean  @default(false)
+  sourceId          String?
+  source            Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  branches     CollegeBranch[]
+  faculty      Faculty[]
+  laboratories Laboratory[]
+  placements   Placement[]
+  events       Event[]
+  clubs        Club[]
+
+  @@unique([collegeId, slug])
+}
+
+// Master list of VTU-recognised engineering branches
+model Branch {
+  id            String         @id @default(cuid())
+  code          String         @unique // KEA branch code, e.g. CS, EC, AI
+  slug          String         @unique
+  name          String
+  shortName     String
+  category      BranchCategory @default(OTHER)
+  durationYears Int            @default(4)
+  about         String?
+  subjects      String[]       @default([])
+  careers       String[]       @default([])
+  higherStudies String[]       @default([])
+  skills        String[]       @default([])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  colleges CollegeBranch[]
+  cutoffs  Cutoff[]
+  fees     Fee[]
+  shortlists Shortlist[]
+}
+
+model CollegeBranch {
+  id           String      @id @default(cuid())
+  collegeId    String
+  college      College     @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  branchId     String
+  branch       Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  intake       Int?
+  startedYear  Int?
+  nbaAccredited Boolean    @default(false)
+  isDemo       Boolean     @default(false)
+
+  @@unique([collegeId, branchId])
+}
+
+// ───────────────────────────── Cutoffs ─────────────────────────────
+
+model Cutoff {
+  id          String   @id @default(cuid())
+  collegeId   String
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  branchId    String
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  year        Int
+  round       Int      @default(1)
+  category    String // GM, 1G, 2AG, 2BG, 3AG, 3BG, SCG, STG, etc.
+  gender      String   @default("ALL") // ALL, MALE, FEMALE
+  seatType    SeatType @default(GENERAL)
+  openingRank Int?
+  closingRank Int
+  isDemo      Boolean  @default(false)
+  sourceId    String?
+  source      Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([collegeId, branchId, year, round, category, gender, seatType])
+  @@index([branchId, year, category])
+  @@index([year, category, closingRank])
+}
+
+// ───────────────────────────── Fees ─────────────────────────────
+
+model Fee {
+  id            String   @id @default(cuid())
+  collegeId     String
+  college       College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  branchId      String? // null = applies to all branches
+  branch        Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  year          Int
+  quota         Quota    @default(KCET)
+  tuitionFee    Int
+  universityFee Int      @default(0)
+  examFee       Int      @default(0)
+  otherFee      Int      @default(0)
+  hostelFee     Int? // annual, if published
+  messFee       Int?
+  notes         String?
+  isDemo        Boolean  @default(false)
+  sourceId      String?
+  source        Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([collegeId, year, quota])
+}
+
+// ───────────────────────────── Faculty ─────────────────────────────
+
+model Faculty {
+  id                String      @id @default(cuid())
+  collegeId         String
+  college           College     @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  departmentId      String?
+  department        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  name              String
+  designation       String?
+  qualification     String?
+  specialization    String?
+  researchInterests String[]    @default([])
+  experienceYears   Int?
+  profileUrl        String?
+  publications      String?
+  isDemo            Boolean     @default(false)
+  sourceId          String?
+  source            Source?     @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([collegeId])
+}
+
+// ───────────────────────────── Campus ─────────────────────────────
+
+model Facility {
+  id          String           @id @default(cuid())
+  collegeId   String
+  college     College          @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  name        String
+  category    FacilityCategory @default(OTHER)
+  description String?
+  isDemo      Boolean          @default(false)
+  sourceId    String?
+  source      Source?          @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+
+  @@index([collegeId])
+}
+
+model Laboratory {
+  id           String      @id @default(cuid())
+  collegeId    String
+  college      College     @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  name         String
+  purpose      String?
+  equipment    String[]    @default([])
+  imageUrl     String?
+  isDemo       Boolean     @default(false)
+  sourceId     String?
+  source       Source?     @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+
+  @@index([collegeId])
+}
+
+model Hostel {
+  id                 String     @id @default(cuid())
+  collegeId          String
+  college            College    @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  type               HostelType
+  name               String?
+  capacity           Int?
+  feePerYear         Int?
+  messFeePerYear     Int?
+  wifi               Boolean?
+  studyArea          Boolean?
+  security           String?
+  rules              String?
+  distanceFromCampus String?
+  transport          String?
+  isDemo             Boolean    @default(false)
+  sourceId           String?
+  source             Source?    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt          DateTime   @default(now())
+
+  @@index([collegeId])
+}
+
+// ───────────────────────────── Placements ─────────────────────────────
+
+model Placement {
+  id               String      @id @default(cuid())
+  collegeId        String
+  college          College     @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  departmentId     String? // null = college-wide
+  department       Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  year             Int
+  placementPercent Float?
+  studentsPlaced   Int?
+  studentsEligible Int?
+  highestPackage   Float? // LPA
+  averagePackage   Float?
+  medianPackage    Float?
+  lowestPackage    Float?
+  recruitersCount  Int?
+  internshipInfo   String?
+  isDemo           Boolean     @default(false)
+  sourceId         String?
+  source           Source?     @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@unique([collegeId, departmentId, year])
+  @@index([year])
+}
+
+model Recruiter {
+  id       String          @id @default(cuid())
+  name     String          @unique
+  sector   RecruiterSector @default(OTHER)
+  website  String?
+  colleges CollegeRecruiter[]
+}
+
+model CollegeRecruiter {
+  id          String    @id @default(cuid())
+  collegeId   String
+  college     College   @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  recruiterId String
+  recruiter   Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade)
+  year        Int?
+  isDemo      Boolean   @default(false)
+
+  @@unique([collegeId, recruiterId, year])
+}
+
+// ───────────────────────────── Student life ─────────────────────────────
+
+model Event {
+  id           String      @id @default(cuid())
+  collegeId    String
+  college      College     @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  name         String
+  type         EventType   @default(OTHER)
+  date         DateTime?
+  year         Int
+  description  String?
+  results      String?
+  participants Int?
+  imageUrl     String?
+  isDemo       Boolean     @default(false)
+  sourceId     String?
+  source       Source?     @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+
+  @@index([collegeId, year])
+}
+
+model Hackathon {
+  id           String   @id @default(cuid())
+  collegeId    String
+  college      College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  name         String
+  year         Int
+  organizer    String?
+  participants Int?
+  winners      String?
+  projects     String?
+  sponsors     String[] @default([])
+  link         String?
+  imageUrl     String?
+  isDemo       Boolean  @default(false)
+  sourceId     String?
+  source       Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@index([collegeId, year])
+}
+
+model Club {
+  id           String       @id @default(cuid())
+  collegeId    String
+  college      College      @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  departmentId String?
+  department   Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  name         String
+  category     ClubCategory @default(OTHER)
+  description  String?
+  activities   String[]     @default([])
+  achievements String?
+  contactLink  String?
+  isDemo       Boolean      @default(false)
+  sourceId     String?
+  source       Source?      @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+
+  @@index([collegeId])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  collegeId   String
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  year        Int
+  title       String
+  description String?
+  isDemo      Boolean  @default(false)
+  sourceId    String?
+  source      Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  @@index([collegeId, year])
+}
+
+// History timeline entries (established, new departments, accreditation, etc.)
+model Milestone {
+  id          String   @id @default(cuid())
+  collegeId   String
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  year        Int
+  title       String
+  description String?
+  isDemo      Boolean  @default(false)
+  sourceId    String?
+  source      Source?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@index([collegeId, year])
+}
+
+model CollegeImage {
+  id        String  @id @default(cuid())
+  collegeId String
+  college   College @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  credit    String?
+  isDemo    Boolean @default(false)
+}
+
+// ───────────────────────────── Student features ─────────────────────────────
+
+model Shortlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, collegeId])
+}
+
+model Comparison {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  collegeIds String[] @default([])
+  createdAt  DateTime @default(now())
+}
+
+model CollegeReview {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  rating    Int // 1-5
+  text      String?
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, collegeId])
+}
+
+// ───────────────────────────── Admin ─────────────────────────────
+
+model ImportLog {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename     String
+  entity       String // cutoffs, fees, ...
+  rowsTotal    Int
+  rowsImported Int
+  rowsSkipped  Int
+  status       ImportStatus
+  errors       Json?
+  createdAt    DateTime     @default(now())
+}
