@@ -44,3 +44,6 @@ next-env.d.ts
 
 # local
 .cj.tmp
+
+# local embedded postgres data
+.pgdata/

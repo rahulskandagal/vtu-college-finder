@@ -82,9 +82,13 @@ Recruiter ──< CollegeRecruiter
 
 `Role, CollegeType, Quota, SeatType, FacilityCategory, HostelType, RecruiterSector, EventType, ClubCategory, BranchCategory, ImportStatus` — see `schema.prisma`.
 
+## Loaded dataset (KEA)
+
+The seed imports 37 official KEA documents (2019–2025, rounds 1–3, General + Hyderabad-Karnataka): 283 colleges, ~90 branches, 2,84,073 `Cutoff` rows and one `Source` per document. Opening ranks are not published by KEA and are left null. HK documents use suffixed categories (`1H`, `GMH`, `SCKH`…); these are normalised to the general codes with `seatType = HYDERABAD_KARNATAKA`.
+
 ## Category codes
 
-Cutoff `category` is a free string so future KEA codes need no migration; the UI/validation know `GM, GMK, GMR, 1G, 2AG, 2BG, 3AG, 3BG, SCG, STG` (`src/lib/constants.ts`). Sub-quotas (Hyderabad-Karnataka 371J, rural, Kannada medium, SNQ) go in `seatType`.
+Cutoff `category` is a free string so future KEA codes need no migration; the UI/validation know all 28 KEA codes (`GM, GMK, GMR, GMP, 1G, 1K, 1R, 2AG … STR, NRI, OPN, OTH`) (`src/lib/constants.ts`). Sub-quotas (Hyderabad-Karnataka 371J, rural, Kannada medium, SNQ) go in `seatType`.
 
 ## Migrations
 

@@ -10,13 +10,17 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "db:local": "prisma dev -n vtu -d",
+    "db:local": "node scripts/local-postgres.mjs start",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "db:import:kea": "tsx prisma/import-kea.ts",
+    "kea:parse": "sh scripts/parse_all_kea.sh",
+    "db:local:stop": "node scripts/local-postgres.mjs stop"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
@@ -46,11 +50,15 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "embedded-postgres": "^18.4.0-beta.17",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "allowScripts": {
+    "@embedded-postgres/windows-x64@18.4.0-beta.17": true
   }
 }

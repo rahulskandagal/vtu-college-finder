@@ -13,15 +13,33 @@ export const DEMO_NOTICE =
 /** KCET reservation categories as used in KEA allotment documents. */
 export const KCET_CATEGORIES = [
   { code: "GM", label: "GM — General Merit" },
-  { code: "GMK", label: "GMK — GM Kannada medium" },
-  { code: "GMR", label: "GMR — GM Rural" },
+  { code: "GMK", label: "GMK — GM, Kannada medium" },
+  { code: "GMR", label: "GMR — GM, rural" },
+  { code: "GMP", label: "GMP — GM, special (as per KEA)" },
   { code: "1G", label: "1G — Category 1" },
+  { code: "1K", label: "1K — Category 1, Kannada medium" },
+  { code: "1R", label: "1R — Category 1, rural" },
   { code: "2AG", label: "2AG — Category 2A" },
+  { code: "2AK", label: "2AK — Category 2A, Kannada medium" },
+  { code: "2AR", label: "2AR — Category 2A, rural" },
   { code: "2BG", label: "2BG — Category 2B" },
+  { code: "2BK", label: "2BK — Category 2B, Kannada medium" },
+  { code: "2BR", label: "2BR — Category 2B, rural" },
   { code: "3AG", label: "3AG — Category 3A" },
+  { code: "3AK", label: "3AK — Category 3A, Kannada medium" },
+  { code: "3AR", label: "3AR — Category 3A, rural" },
   { code: "3BG", label: "3BG — Category 3B" },
+  { code: "3BK", label: "3BK — Category 3B, Kannada medium" },
+  { code: "3BR", label: "3BR — Category 3B, rural" },
   { code: "SCG", label: "SCG — Scheduled Caste" },
+  { code: "SCK", label: "SCK — SC, Kannada medium" },
+  { code: "SCR", label: "SCR — SC, rural" },
   { code: "STG", label: "STG — Scheduled Tribe" },
+  { code: "STK", label: "STK — ST, Kannada medium" },
+  { code: "STR", label: "STR — ST, rural" },
+  { code: "NRI", label: "NRI — NRI quota" },
+  { code: "OPN", label: "OPN — Open (as per KEA)" },
+  { code: "OTH", label: "OTH — Other (as per KEA)" },
 ] as const;
 
 export type KcetCategory = (typeof KCET_CATEGORIES)[number]["code"];
@@ -78,7 +96,7 @@ export const FEE_RANGES = [
   { value: "300000-", label: "₹3 lakh +", min: 300000, max: Number.MAX_SAFE_INTEGER },
 ] as const;
 
-export const CUTOFF_YEARS = Array.from({ length: 10 }, (_, i) => 2026 - i); // 2026 → 2017
+export const CUTOFF_YEARS = Array.from({ length: 10 }, (_, i) => 2025 - i); // 2025 → 2016
 export const MIN_CUTOFF_YEAR = 2010;
 export const MAX_CUTOFF_YEAR = 2030;
 export const MAX_KCET_RANK = 300000;

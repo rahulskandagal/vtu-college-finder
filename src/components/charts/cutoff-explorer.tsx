@@ -112,9 +112,11 @@ export function CutoffExplorer({ rows, title, fixedBranch }: { rows: CompactCuto
           </h3>
           <div className="flex items-center gap-2">
             {anyDemo && <DemoBadge />}
-            {sources.map((s) => (
-              <Badge key={s}>{s}</Badge>
-            ))}
+            {sources.length > 0 && (
+              <Badge title={sources.join(" | ")}>
+                {sources.every((s) => s.startsWith("KEA")) ? `Source: KEA official cut-off documents (${sources.length})` : `${sources.length} source${sources.length === 1 ? "" : "s"}`}
+              </Badge>
+            )}
           </div>
         </div>
         <CutoffTrendChart rows={chart.rows} keys={chart.keys} />

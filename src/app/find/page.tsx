@@ -99,7 +99,11 @@ export default async function FindPage({ searchParams }: { searchParams: Promise
           </details>
 
           <Disclaimer className="mb-6" />
-          <RecommendationResults result={result} />
+          <RecommendationResults
+            result={result}
+            limit={one(sp.all) === "1" ? 500 : 40}
+            showAllHref={one(sp.all) === "1" ? undefined : `/find?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).filter(([, v]) => typeof v === "string") as [string, string][]), all: "1" }).toString()}`}
+          />
           <p className="mt-8 text-sm text-muted">
             Want the underlying numbers? Open the <Link href="/cutoffs" className="text-primary hover:underline">cutoff explorer</Link> to see every round and category for any college.
           </p>

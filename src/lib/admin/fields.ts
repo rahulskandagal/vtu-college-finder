@@ -96,7 +96,7 @@ export const ADMIN_FIELDS: Record<string, FieldDef[]> = {
     { name: "branchId", label: "Branch", type: "branch", required: true },
     { name: "year", label: "Year", type: "number", required: true },
     { name: "round", label: "Round", type: "number", required: true },
-    { name: "category", label: "Category", type: "select", options: opts(["GM", "GMK", "GMR", "1G", "2AG", "2BG", "3AG", "3BG", "SCG", "STG"]), required: true },
+    { name: "category", label: "Category", type: "select", options: opts(["GM", "GMK", "GMR", "GMP", "1G", "1K", "1R", "2AG", "2AK", "2AR", "2BG", "2BK", "2BR", "3AG", "3AK", "3AR", "3BG", "3BK", "3BR", "SCG", "SCK", "SCR", "STG", "STK", "STR", "NRI", "OPN", "OTH"]), required: true },
     { name: "gender", label: "Gender", type: "select", options: opts(["ALL", "MALE", "FEMALE"]) },
     { name: "seatType", label: "Seat type", type: "select", options: opts(["GENERAL", "HYDERABAD_KARNATAKA", "RURAL", "KANNADA_MEDIUM", "SNQ", "OTHER"]) },
     { name: "openingRank", label: "Opening rank", type: "number" },

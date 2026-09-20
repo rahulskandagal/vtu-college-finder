@@ -6,7 +6,7 @@ A student enters their KCET rank, category and preferences and gets colleges/bra
 
 > **Disclaimer.** KCET cutoff information shown on this platform is based on historical and publicly available data. Cutoffs can change from year to year depending on category, seat availability, demand, counselling rounds and other factors. This platform does not guarantee admission.
 
-> **Demo data.** The seed dataset (`prisma/seed.ts`) contains **illustrative sample numbers only** (cutoffs, fees, placements, faculty placeholders, events, clubs). Every seeded record is flagged `isDemo = true` and linked to a "Demo seed data" source, and the UI shows a *Demo data* badge/banner wherever it appears. Replace it with verified KEA / college data before any public use.
+> **Real data.** The default seed loads **official KEA UGCET cut-off documents** for every participating engineering college in Karnataka: 283 colleges (KEA codes E001–E511), ~90 branches and **2,84,073 closing-rank records** covering 2019–2025, all rounds (1 / 2 / 3-extended), all 28 KEA categories and both seat pools (General and Hyderabad-Karnataka 371-J). Every row is linked to a `Source` naming the KEA PDF it was parsed from. Fees, placements, faculty, campus and student-life data are **not** loaded yet and show as *Information not available* until entered through the admin dashboard with a source. An optional illustrative dataset (`prisma/seed-demo.ts`, all rows flagged `isDemo`) exists for empty development databases only.
 
 ---
 
@@ -50,15 +50,14 @@ npm install            # also runs `prisma generate`
 cp .env.example .env   # then edit DATABASE_URL / AUTH_SECRET / ADMIN_*
 ```
 
-### Option A — no Postgres installed? Use Prisma's local Postgres (dev only)
+### Option A — no Postgres installed? Use the bundled local PostgreSQL (dev only)
 
 ```bash
-npm run db:local       # starts a local PostgreSQL (WASM) server and prints its URL
+npm run db:local       # real PostgreSQL 18 binaries (embedded-postgres), data in ./.pgdata, port 5433
 ```
 
-Put the printed URL in `.env` as `DATABASE_URL` (change the database name from `template1` to `vtu_college_finder` — it is created automatically by `prisma migrate dev`), e.g.
-`postgres://postgres:postgres@localhost:51214/vtu_college_finder?sslmode=disable`.
-Later use `npx prisma dev ls`, `npx prisma dev stop vtu`, `npx prisma dev start vtu`.
+Keep that terminal open (Ctrl+C stops it, or `npm run db:local:stop`). Use
+`DATABASE_URL="postgresql://postgres:postgres@localhost:5433/vtu_college_finder"` in `.env`.
 
 ### Option B — Docker Postgres
 
@@ -71,7 +70,7 @@ docker compose up -d db    # PostgreSQL 16 on localhost:5432 (see docker-compose
 
 ```bash
 npm run db:migrate     # applies prisma/migrations (creates the DB if needed)
-npm run db:seed        # loads the DEMO dataset + admin/student accounts
+npm run db:seed        # admin/student accounts + imports all KEA cut-off documents (~1–2 min)
 npm run dev            # http://localhost:3000
 ```
 
@@ -91,10 +90,13 @@ Seeded accounts:
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | Vitest unit tests (cutoff engine, CSV validation) |
-| `npm run db:local` | Start Prisma local Postgres (dev only) |
+| `npm run db:local` / `db:local:stop` | Start / stop the bundled local PostgreSQL (dev only) |
+| `npm run db:import:kea` | (Re-)import `data/kea/*.json` into the database (`-- --wipe` to start clean) |
+| `npm run kea:parse` | Re-parse every KEA PDF in `data/raw/` to `data/kea/*.json` (needs Python + `pdfplumber`) |
+| `npm run db:seed:demo` | Illustrative demo records — refuses to run if real colleges exist |
 | `npm run db:migrate` | `prisma migrate dev` |
 | `npm run db:deploy` | `prisma migrate deploy` (production) |
-| `npm run db:seed` | Seed demo data |
+| `npm run db:seed` | Users + real KEA import |
 | `npm run db:studio` | Prisma Studio |
 
 ## Project structure
@@ -103,7 +105,16 @@ Seeded accounts:
 prisma/
   schema.prisma          # 25 models — see docs/DATABASE.md
   migrations/            # SQL migrations
-  seed.ts                # demo dataset (flagged isDemo)
+  seed.ts                # users + KEA import (real data)
+  import-kea.ts          # loads data/kea/*.json (colleges, branches, cutoffs, sources)
+  kea/branches.ts        # canonical branch registry (KEA course codes / names → branch)
+  kea/geo.ts             # Karnataka place → district lookup
+  seed-demo.ts           # optional illustrative data (isDemo) for empty dev DBs
+data/
+  raw/                   # official KEA cut-off PDFs (2019–2025)
+  kea/                   # parsed JSON per document
+scripts/
+  parse_kea_cutoff_pdf.py, parse_all_kea.sh, local-postgres.mjs
 src/
   app/                   # Next.js App Router pages + route handlers
     api/                 # REST API — see docs/API.md
@@ -144,14 +155,22 @@ For each (college, branch) with cutoffs for the student's category (falling back
 
 Thresholds live in `src/lib/cutoff-engine.ts` (`THRESHOLDS`) and are covered by unit tests. Results are always shown with the disclaimer and the underlying numbers.
 
-## Loading real data
+## KEA data pipeline
 
-1. Add a **Source** (`/admin/sources`) for the KEA document / college page, with URL, year and verification date.
-2. Import cutoffs from CSV/Excel at `/admin/import` (validate → import), attaching the source and leaving *demo* unchecked. Columns: `college_code, college_name*, branch, year, round*, category, gender*, seat_type*, opening_rank*, closing_rank`.
-3. Add/edit every other entity from the admin dashboard; each record has `sourceId`, `isDemo` and timestamps.
-4. Delete the demo rows (filter by the "Demo seed data" source) once real data is in place.
+```
+KEA PDF (cetonline.karnataka.gov.in) ──► scripts/parse_kea_cutoff_pdf.py ──► data/kea/kea-<year>-r<round>-<gen|hk>.json
+                                                                                   │
+                                            prisma/import-kea.ts  ◄────────────────┘
+                                            (canonical branches: prisma/kea/branches.ts · geography: prisma/kea/geo.ts)
+```
 
-Never fabricate values: leave fields empty and the UI will show *Information not available*.
+- `data/raw/` holds the 37 official PDFs (2019 R2–R3, 2020–2025 R1–R3, General + HK). `scripts/parse_all_kea.sh` lists their source URLs on the KEA server.
+- The parser understands both KEA layouts (2019–2024 "CS Computers 1234 …" and 2025 "Course Name …" tables), assigns numbers to category columns by x-position (the PDF text layer glues adjacent 6-digit ranks together), joins wrapped course names and rounds tie ranks (x.5).
+- KEA's ~160 course labels are mapped to canonical branches in `prisma/kea/branches.ts` (e.g. `CS` / `BW` / `B TECH IN COMPUTER SCIENCE AND ENGINEERING` → *Computer Science and Engineering*); unmapped labels are imported verbatim so nothing is lost.
+- College name, city and district are derived from KEA's text (`prisma/kea/geo.ts`); type/autonomy come from KEA's own annotations (`Govt.`, `(AUTONOMOUS)`, `University`). Established year, website, accreditation etc. are left empty — add them via the admin dashboard with a source.
+- New year? Drop the PDF into `data/raw/`, add a line to `scripts/parse_all_kea.sh`, run `npm run kea:parse && npm run db:import:kea`.
+
+For any other data (fees, placements, faculty, facilities…): add a **Source** in `/admin/sources`, then enter records via the admin dashboard or CSV import (`/admin/import` for cutoffs). Never fabricate values — leave fields empty and the UI shows *Information not available*.
 
 ## Deployment
 

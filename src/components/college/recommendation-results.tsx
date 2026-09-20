@@ -21,26 +21,40 @@ function Trend({ trend }: { trend: RecommendationItem["stats"]["trend"] }) {
   return null;
 }
 
-export function RecommendationResults({ result }: { result: RecommendationResult }) {
+export function RecommendationResults({ result, limit = 40, showAllHref }: { result: RecommendationResult; limit?: number; showAllHref?: string }) {
   if (result.groups.length === 0) {
     return <EmptyState title="No cutoff records match these filters" description="Try removing district, branch or fee filters — or check the cutoff explorer for available data." />;
   }
   return (
     <div className="space-y-10">
-      {result.groups.map((g) => (
-        <section key={g.group} id={g.group.toLowerCase()}>
-          <div className="mb-3 flex flex-wrap items-baseline gap-3">
-            <h2 className="text-xl font-semibold">{g.label}</h2>
-            <Badge tone={GROUP_TONE[g.group].badge}>{g.items.length} option{g.items.length === 1 ? "" : "s"}</Badge>
-            <p className="w-full text-sm text-muted sm:w-auto">{g.description}</p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {g.items.map((it) => (
-              <ResultCard key={`${it.college.id}-${it.branch.id}`} item={it} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {result.groups.map((g) => {
+        const shown = g.items.slice(0, limit);
+        return (
+          <section key={g.group} id={g.group.toLowerCase()}>
+            <div className="mb-3 flex flex-wrap items-baseline gap-3">
+              <h2 className="text-xl font-semibold">{g.label}</h2>
+              <Badge tone={GROUP_TONE[g.group].badge}>{g.items.length.toLocaleString("en-IN")} option{g.items.length === 1 ? "" : "s"}</Badge>
+              <p className="w-full text-sm text-muted sm:w-auto">{g.description}</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {shown.map((it) => (
+                <ResultCard key={`${it.college.id}-${it.branch.id}`} item={it} />
+              ))}
+            </div>
+            {g.items.length > shown.length && (
+              <p className="mt-3 text-sm text-muted">
+                Showing the {shown.length} most competitive of {g.items.length.toLocaleString("en-IN")} options. Narrow by branch or district for a focused list
+                {showAllHref && (
+                  <>
+                    , or <Link href={showAllHref} className="text-primary hover:underline">show all</Link>
+                  </>
+                )}
+                .
+              </p>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -109,8 +123,13 @@ function ResultCard({ item }: { item: RecommendationItem }) {
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] text-muted">
-          Source: {item.sources.map((src) => src.name).join("; ") || "not recorded"}
+        <p className="text-[11px] text-muted" title={item.sources.map((src) => src.name).join(" | ")}>
+          Source:{" "}
+          {item.sources.length === 0
+            ? "not recorded"
+            : item.sources.every((src) => src.name.startsWith("KEA"))
+              ? `KEA official cut-off documents (${item.sources.length})`
+              : item.sources.map((src) => src.name).join("; ")}
         </p>
         <div className="flex gap-2">
           <CompareToggle slug={item.college.slug} name={item.college.name} />
