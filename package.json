@@ -20,7 +20,9 @@
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "db:import:kea": "tsx prisma/import-kea.ts",
     "kea:parse": "sh scripts/parse_all_kea.sh",
-    "db:local:stop": "node scripts/local-postgres.mjs stop"
+    "db:local:stop": "node scripts/local-postgres.mjs stop",
+    "start:local": "node scripts/start-local.mjs",
+    "start:local:prod": "node scripts/start-local.mjs --prod"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

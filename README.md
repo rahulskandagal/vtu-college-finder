@@ -39,7 +39,18 @@ A student enters their KCET rank, category and preferences and gets colleges/bra
 - **SEO** — unique URLs per college and branch, metadata + Open Graph, JSON-LD, `sitemap.xml`, `robots.txt`.
 - **Security** — bcrypt (12 rounds), HS256 JWT sessions, role-based authorization (`STUDENT` / `ADMIN`) enforced in route handlers and pages, zod validation on all inputs, in-memory rate limiting on auth/recommend, ORM-only data access, security headers via `proxy.ts`, no secrets in client code.
 
-## Quick start (local development)
+## Quick start — the easy way (Windows, no Postgres/Docker needed)
+
+Requirements: **Node.js ≥ 20.9** (https://nodejs.org) and npm.
+
+```bash
+npm install          # first time only
+npm run start:local  # starts the bundled PostgreSQL + the app → http://localhost:3000
+```
+
+or just double-click **`start.bat`**. The first run initialises the database and imports the KEA data (1–2 min); later runs start in seconds. Press Ctrl+C in that window (or close it) to stop. `npm run start:local:prod` builds once and serves the faster production version.
+
+## Manual setup (any OS / your own PostgreSQL)
 
 Requirements: **Node.js ≥ 20.9** (tested on 24), npm, and a PostgreSQL database.
 
